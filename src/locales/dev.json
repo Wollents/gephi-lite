@@ -39,8 +39,12 @@
     "open": {
       "cloud": "Open graph from {{provider}}",
       "remote": "Open remote graph",
-      "local": "Open local graph",
-      "new": "Create a new graph"
+      "local": "Upload a graph from computer",
+      "new": "Clear current graph",
+      "placeholder": {
+        "title": "Choose a graph from server",
+        "button": "Submit"
+      }
     },
     "save": {
       "default": "Save",
