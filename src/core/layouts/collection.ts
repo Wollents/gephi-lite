@@ -18,9 +18,57 @@ import { Layout, LayoutMapping, SyncLayout, WorkerLayout } from "./types";
 const nodeCoordinatesCustomFn = new Function(`return (
 function nodeCoordinates(id, attributes, index, graph) {
   // / Your code goes here
-  return { x: Math.random() * 1000, y: Math.random() * 1000 };
+  const width = 1000;  // Total width of the layout
+  const height = 1000; // Total height of the layout
+  const margin = 50;   // Margin around the layout
+
+  // Determine the x position based on the label
+  let x;
+  if (attributes.label === "Anomaly") {
+    x = margin + Math.random() * (width / 2 - 2 * margin);
+  } else if (attributes.label === "Normal") {
+    x = width / 2 + margin + Math.random() * (width / 2 - 2 * margin);
+  } else {
+    // If the label is neither "Anomaly" nor "Normal", place it randomly
+    x = margin + Math.random() * (width - 2 * margin);
+  }
+
+  // Random y position within the height
+  const y = margin + Math.random() * (height - 2 * margin);
+
+  return { x, y };
 } )`)();
 
+const threasholdFunc = new Function(`return (
+  function threasholdFunc(id, attributes, index, graph, threshold) {
+    const width = 1000;
+    const height = 1000;
+    const margin = 50;
+  
+    let x;
+    if (isNaN(attributes.label)){
+        if (attributes.label === "Anomaly"){
+          attributes.label = 1
+        }else{
+          attributes.label = 0
+        }
+    }
+    if (!isNaN(labelValue)) {
+      if (labelValue > threshold) {
+        // Right side for values above threshold
+        x = width/2 + margin + Math.random() * (width/2 - 2*margin);
+      } else {
+        // Left side for values below or equal to threshold
+        x = margin + Math.random() * (width/2 - 2*margin);
+      }
+    } else {
+      // Fallback for non-numeric labels
+      x = margin + Math.random() * (width - 2*margin);
+    }
+  
+    const y = margin + Math.random() * (height - 2*margin);
+    return { x, y };
+  } )`)();
 /**
  * List of available layouts
  */
@@ -45,6 +93,71 @@ export const LAYOUTS: Array<Layout> = [
     ],
     run: (graph, options) => random(graph, options?.settings) as unknown as LayoutMapping,
   } as SyncLayout<RandomLayoutOptions>,
+  {
+    id: "anomaly",
+    type: "sync",
+    description: true,
+    parameters: [
+      {
+        id: "threshold",
+        type: "number",
+        required: true,
+        defaultValue: 0,
+        description: "Threshold value to separate nodes"
+      },
+      {
+        id: "script",
+        type: "script",
+        functionJsDoc: `/**
+  * Function that return coordinates for the specified node.
+  *
+  * @param {string} id The ID of the node
+  * @param {Object.<string, number | string | boolean | undefined | null>} attributes Attributes of the node
+  * @param {number} index The index position of the node in the graph 
+  * @param {Graph} graph The graphology instance
+  * @param {number} threshold The threshold value from user input
+  * @returns {x: number, y: number} The computed coordinates
+  */`,
+        defaultValue: threasholdFunc,
+        // functionCheck: (fn_) => {
+        //   if (!fn_) throw new Error("Function is not defined");
+        //   const fullGraph = dataGraphToFullGraph(graphDatasetAtom.get());
+        //   const id = fullGraph.nodes()[0];
+        //   const attributes = fullGraph.getNodeAttributes(id);
+        //   // 测试时传入默认threshold 0
+        //   const result = fn_(id, attributes, 0, fullGraph, 0);
+        //   if (!isObject(result)) throw new Error("Function must return an object");
+        //   if (isNil(result.x)) throw new Error("Missing x property");
+        //   if (isNil(result.y)) throw new Error("Missing y property");
+        // }
+      }
+    ],
+    run(graph: Graph, options) {
+      const { script, threshold } = options?.settings || {};
+      if (!script || typeof threshold !== "number") {
+        console.error("[layout] Missing script or threshold");
+        return {};
+      }
+      
+      const graphCopy = graph.copy();
+      Object.freeze(graphCopy);
+  
+      const res: LayoutMapping = {};
+      graph.nodes().forEach((id, index) => {
+        res[id] = script(
+          id,
+          graph.getNodeAttributes(id),
+          index,
+          graphCopy,
+          threshold // 传递用户输入的阈值
+        );
+      });
+      return res;
+    },
+  } as SyncLayout<{
+    script?: (id: string, attributes: ItemData, index: number, graph: Graph, threshold: number) => { x: number; y: number };
+    threshold?: number;
+  }>,
   {
     id: "circular",
     type: "sync",

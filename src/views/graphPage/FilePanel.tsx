@@ -23,6 +23,7 @@ import { checkFilenameExtension } from "../../utils/check";
 import ConfirmModal from "./modals/ConfirmModal";
 import { CloudFileModal } from "./modals/open/CloudFileModal";
 import { LocalFileModal } from "./modals/open/LocalFileModal";
+import { ModalRun } from "./modals/open/ModalRun"
 import { ExportPNGModal } from "./modals/save/ExportPNGModal";
 import { SaveCloudFileModal } from "./modals/save/SaveCloudFileModal";
 import { DEFAULT_SELECT_PROPS } from "../../components/consts";
@@ -33,7 +34,6 @@ type MetricOption = {
   value: string;
   label: string;
 };
-
 export const FilePanel: FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const { importFile } = useImportActions();
@@ -189,10 +189,21 @@ export const FilePanel: FC = () => {
             <button
               className="btn btn-sm btn-outline-dark mb-1 mt-3"
               onClick={() => {
-                openModal({ component: LocalFileModal, arguments: {} });
+                openModal({ component: ModalRun, arguments: {} });
               }}
             >
               <FaRegFolderOpen className="me-1" />
+              {t(`menu.open.modal`).toString()}
+            </button>
+          </div>
+          <div>
+            <button
+              className="btn btn-sm btn-outline-dark mb-1 mt-3"
+              onClick={() => {
+                openModal({ component: LocalFileModal, arguments: {} });
+              }}
+            >
+              <ImFileEmpty className="me-1" />
               {t(`menu.open.local`).toString()}
             </button>
           </div>

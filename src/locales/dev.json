@@ -41,6 +41,7 @@
       "remote": "Open remote graph",
       "local": "Upload a graph from computer",
       "new": "Clear current graph",
+      "modal": "Run algorithm",
       "placeholder": {
         "title": "Choose a graph from server",
         "button": "Submit"
@@ -231,6 +232,12 @@
   },
   "graph": {
     "title": "Graph",
+    "run":{
+        "select_model": "Model",
+        "select_dataset": "Dataset",
+        "select_option": "Options",
+        "start": "Start"
+      },
     "control": {
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
@@ -520,6 +527,17 @@
       "success": "Layout \"{{layout}}\" has successfully been applied.",
       "started": "Layout {{layout}} is running",
       "stopped": "Layout {{layout}} has been stopped"
+    },
+    "anomaly":{
+      "title": "Pick Anomaly",
+      "description": "Pick out all the anomalies from the normals",
+      "parameters":{
+        "threshold":{
+          "title": "Threshold",
+          "description": "Threshold of Anomaly Score"
+        }
+        
+      }
     },
     "random": {
       "title": "Random",
