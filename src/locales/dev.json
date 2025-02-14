@@ -42,6 +42,7 @@
       "local": "Upload a graph from computer",
       "new": "Clear current graph",
       "modal": "Run algorithm",
+      "modeltrain": "Train Model with New Dataset",
       "placeholder": {
         "title": "Choose a graph from server",
         "button": "Submit"
@@ -317,6 +318,7 @@
       "local": {
         "title": "Open a local file",
         "dragndrop_text": "Drag'n'drop a GEXF or GRAPHML file",
+        "dragndrop_text_train": "Drag'n'drop a .mat file",
         "success": "File {{filename}} has been successfully loaded",
         "error": "An error occurred while opening the file. Please check that the file is a valid."
       },

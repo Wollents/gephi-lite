@@ -56,6 +56,7 @@ const threasholdFunc = new Function(`return (
     if (!isNaN(labelValue)) {
       if (labelValue > threshold) {
         // Right side for values above threshold
+        graph.getNodeAttributes(id).color = 'rgb(291, 65, 57)'
         x = width/2 + margin + Math.random() * (width/2 - 2*margin);
       } else {
         // Left side for values below or equal to threshold
@@ -67,7 +68,8 @@ const threasholdFunc = new Function(`return (
     }
   
     const y = margin + Math.random() * (height - 2*margin);
-    return { x, y };
+    color = graph.getNodeAttributes(id).color
+    return { x, y, color};
   } )`)();
 /**
  * List of available layouts
@@ -119,17 +121,9 @@ export const LAYOUTS: Array<Layout> = [
   * @returns {x: number, y: number} The computed coordinates
   */`,
         defaultValue: threasholdFunc,
-        // functionCheck: (fn_) => {
-        //   if (!fn_) throw new Error("Function is not defined");
-        //   const fullGraph = dataGraphToFullGraph(graphDatasetAtom.get());
-        //   const id = fullGraph.nodes()[0];
-        //   const attributes = fullGraph.getNodeAttributes(id);
-        //   // 测试时传入默认threshold 0
-        //   const result = fn_(id, attributes, 0, fullGraph, 0);
-        //   if (!isObject(result)) throw new Error("Function must return an object");
-        //   if (isNil(result.x)) throw new Error("Missing x property");
-        //   if (isNil(result.y)) throw new Error("Missing y property");
-        // }
+        functionCheck: (fn_) => {
+          if (!fn_) throw new Error("Function is not defined");
+        }
       }
     ],
     run(graph: Graph, options) {

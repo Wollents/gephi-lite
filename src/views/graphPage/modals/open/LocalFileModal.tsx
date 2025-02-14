@@ -25,7 +25,7 @@ export const LocalFileModal: FC<ModalProps<unknown>> = ({ cancel }) => {
         )}
         <DropInput
           value={file}
-          onChange={(file) => setFile(file)}
+          onChange={(file) => {setFile(file); console.log("graph file is ", file)}}
           helpText={t("graph.open.local.dragndrop_text").toString()}
           accept={{ "application/graph": [".gexf", ".graphml"] }}
         />

@@ -24,6 +24,7 @@ import ConfirmModal from "./modals/ConfirmModal";
 import { CloudFileModal } from "./modals/open/CloudFileModal";
 import { LocalFileModal } from "./modals/open/LocalFileModal";
 import { ModalRun } from "./modals/open/ModalRun"
+import { ModelTrain } from "./modals/open/ModelTrain"
 import { ExportPNGModal } from "./modals/save/ExportPNGModal";
 import { SaveCloudFileModal } from "./modals/save/SaveCloudFileModal";
 import { DEFAULT_SELECT_PROPS } from "../../components/consts";
@@ -194,6 +195,17 @@ export const FilePanel: FC = () => {
             >
               <FaRegFolderOpen className="me-1" />
               {t(`menu.open.modal`).toString()}
+            </button>
+          </div>
+          <div>
+            <button
+              className="btn btn-sm btn-outline-dark mb-1 mt-3"
+              onClick={() => {
+                openModal({ component: ModelTrain, arguments: {} });
+              }}
+            >
+              <FaRegFolderOpen className="me-1" />
+              {t(`menu.open.modeltrain`).toString()}
             </button>
           </div>
           <div>
