@@ -237,7 +237,9 @@
         "select_model": "Model",
         "select_dataset": "Dataset",
         "select_option": "Options",
-        "start": "Start"
+        "start": "Start",
+        "title": "Get Model Results",
+        "train": "Train Model with New Dataset"
       },
     "control": {
       "zoomIn": "Zoom In",
@@ -317,7 +319,7 @@
       "title": "Open a graph file",
       "local": {
         "title": "Open a local file",
-        "dragndrop_text": "Drag'n'drop a GEXF or GRAPHML file",
+        "dragndrop_text": "Drag'n'drop a GEXF or .mat file",
         "dragndrop_text_train": "Drag'n'drop a .mat file",
         "success": "File {{filename}} has been successfully loaded",
         "error": "An error occurred while opening the file. Please check that the file is a valid."

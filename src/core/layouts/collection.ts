@@ -53,6 +53,7 @@ const threasholdFunc = new Function(`return (
           attributes.label = 0
         }
     }
+    const labelValue = parseFloat(attributes.label);
     if (!isNaN(labelValue)) {
       if (labelValue > threshold) {
         // Right side for values above threshold

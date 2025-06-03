@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from "react";
+import { FC, useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { FaPlay, FaTimes } from "react-icons/fa";
 
@@ -12,7 +12,10 @@ interface ModelData {
   models: Array<{ id: string; name: string }>;
   datasets: Array<{ id: string; name: string }>;
 }
-
+// 本地存储键名
+const TASK_ID_STORAGE_KEY = "modelTrainTaskId";
+const SELECTED_MODEL_KEY = "selectedModel";
+const FILE_NAME_KEY = "fileName";
 export const ModelTrain: FC<ModalProps<unknown>> = ({ cancel }) => {
   const { notify } = useNotifications();
   const { t } = useTranslation();
@@ -23,109 +26,138 @@ export const ModelTrain: FC<ModalProps<unknown>> = ({ cancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  useEffect(() => {
-    // 模拟网络请求
+
+
+ // 启动进度轮询
+ const startProgressPolling = useCallback((taskId: string) => {
+  intervalRef.current = setInterval(async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/graph/run/progress?taskId=${taskId}`);
+      const { progress, status } = await response.json();
+      console.log("progress:", progress, "status:", status)
+      if (status === "completed") {
+        clearInterval(intervalRef.current);
+        cleanupLocalStorage();
+        setProgress(100);
+        notify({ type: "success", message: t("graph.run.completed").toString() });
+        setTimeout(() => cancel(), 2000);
+        setIsSubmitting(false);
+      }  else if (status == "running") {
+        setProgress(progress);
+      } else{
+        clearInterval(intervalRef.current);
+        cleanupLocalStorage();
+        notify({ type: "error", message: t("graph.run.progress_error").toString() });
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.log("error occurs")
+      cleanupLocalStorage();
+      notify({ type: "error", message: t("graph.run.progress_error").toString() });
+      setIsSubmitting(false);
+      clearInterval(intervalRef.current);
+    }
+  }, 2000);
+}, [cancel, notify, t]);
+
+useEffect(() => {
+  // 初始化：获取模型数据和恢复任务状态
+  const fetchModelData = () => {
     fetch("http://localhost:8080/graph/run/modeldata")
       .then(response => response.json())
       .then(data => {
-          setModelData(data);
-          setIsLoading(false);
-          console.log(data);
+        setModelData(data);
+        setIsLoading(false);
       })
       .catch(error => console.error('Error fetching datasets:', error));
-  }, []);
+  };
 
-  useEffect(() => {
-    // 清理进度轮询
-    return () => {
-      if (taskId) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [taskId]);
+  // 检查本地存储中的任务ID
+  const savedTaskId = localStorage.getItem(TASK_ID_STORAGE_KEY);
+  const savedModel = localStorage.getItem(SELECTED_MODEL_KEY);
+  if (savedTaskId) {
+    setTaskId(savedTaskId);
+    setIsSubmitting(true);
+    savedModel && setSelectedModel(savedModel);
+    startProgressPolling(savedTaskId);
+  }
+  
+  fetchModelData();
+  return () => {
+    intervalRef.current && clearInterval(intervalRef.current);
+  };
+  
+}, [startProgressPolling]);
+
+ // 清理轮询和本地存储
+ useEffect(() => {
+  return () => {
+    if (taskId) {
+      clearInterval(intervalRef.current);
+    }
+  };
+}, [taskId]);
+ 
+ 
 
   const intervalRef = useRef<NodeJS.Timeout>();
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setFile(file || null);
+  const handleFileChange = (uploadFile: File|null) => {
+    setFile(uploadFile || null);
+    localStorage.setItem(FILE_NAME_KEY, uploadFile?.name || t("graph.open.local.dragndrop_text_train").toString());
   };
 
-  const startProgressPolling = (taskId: string) => {
-    intervalRef.current = setInterval(async () => {
-      try {
-        const response = await fetch(`http://localhost:8080/graph/run/progress?taskId=${taskId}`);
-        const { progress, status } = await response.json();
-        
-        if (status === "completed") {
-          setProgress(100);
-          clearInterval(intervalRef.current);
-          notify({
-            type: "success",
-            message: t("graph.run.completed").toString(),
-          });
-          setTimeout(() => cancel(), 2000);
-        } else if (status === "error") {
-          clearInterval(intervalRef.current);
-          notify({
-            type: "error",
-            message: t("graph.run.progress_error").toString(),
-          });
-        } else {
-          setProgress(progress);
-        }
-      } catch (error) {
-        clearInterval(intervalRef.current);
-        notify({
-          type: "error",
-          message: t("graph.run.progress_error").toString(),
-        });
-      }
-    }, 1000);
-  };
 
+
+ 
+
+  const cleanupLocalStorage = () => {
+    localStorage.removeItem(TASK_ID_STORAGE_KEY);
+    localStorage.removeItem(SELECTED_MODEL_KEY);
+    localStorage.removeItem(FILE_NAME_KEY);
+  };
+  // 提交训练任务
   const handleSubmit = async () => {
     if (!selectedModel || !file) {
-      notify({
-        type: "warning",
-        message: t("graph.run.select_both").toString(),
-      });
+      notify({ type: "warning", message: t("graph.run.select_both").toString() });
       return;
     }
 
     setIsSubmitting(true);
-    console.log("file is ", file)
+    const formData = new FormData();
+    formData.append('modelId', selectedModel);
+    formData.append('dataset_file', file);
+    localStorage.setItem(SELECTED_MODEL_KEY, selectedModel);
+    localStorage.setItem(FILE_NAME_KEY, file.name);
+
     try {
-      const formData = new FormData();
-      formData.append('modelId', selectedModel);
-      formData.append('dataset_file', file);
-      console.log("formData is ", file)
-      fetch("http://localhost:8080/graph/run/start/progress", {
+      const response = await fetch("http://localhost:8080/graph/run/start/progress", {
         method: "POST",
         body: formData,
-      }).then(response => response.json())
-      .then(data => {
-        console.log("data is ")
-        console.log(data)
-        const taskId = data.taskId
-        setTaskId(taskId);
-        startProgressPolling(taskId);
-      })
-      .catch(error => console.error('Error fetching datasets:', error));
-      
-      
-      
-    } catch (error) {
-      setIsSubmitting(false);
-      notify({
-        type: "error",
-        message: t("graph.run.start_error").toString(),
-        title: t("gephi-lite.title").toString(),
       });
+      console.log("response is ", response)
+      const data = await response.json();
+      if(response.status != 200){
+        throw new Error(data.error + "");
+      }
+      console.log("getting sub data", data)
+
+      localStorage.setItem(TASK_ID_STORAGE_KEY, data.taskId); // 保存到本地存储
+      
+      setTaskId(data.taskId);
+      startProgressPolling(data.taskId);
+    } catch (error) {
+      cleanupLocalStorage();
+      setIsSubmitting(false);
+      notify({ type: "error", message:  " ".toString() + error});
     }
+  };
+  const handleCancel = () => {
+    clearInterval(intervalRef.current);
+    cancel();
   };
 
   return (
-    <Modal title={t("graph.run.title").toString()} onClose={() => cancel()}>
+    <Modal title={t("graph.run.train").toString()} onClose={() => handleCancel()}>
       <>
         {isLoading ? (
           <Loader />
@@ -148,17 +180,10 @@ export const ModelTrain: FC<ModalProps<unknown>> = ({ cancel }) => {
                   ))}
                 </select>
               </div>
-              <input
-                  type="file"
-                  className="form-control"
-                  onChange={handleFileChange}
-                  accept=".mat"
-                  disabled={isSubmitting}
-                />
             <DropInput
                 value={file}
-                onChange={(file) => setFile(file)}
-                helpText={t("graph.open.local.dragndrop_text_train").toString()}
+                onChange={(file) => handleFileChange(file)}
+                helpText={localStorage.getItem(FILE_NAME_KEY) || t("graph.open.local.dragndrop_text_train").toString()}
                 accept={{ "application/mat": [".mat"] }} // 根据MAT文件类型调整
             />
             </div>
